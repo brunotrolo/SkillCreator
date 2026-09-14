@@ -145,17 +145,22 @@ Com o caso de teste validado (Fases 1–3), compile o resultado final:
    .claude/skills/<nome-da-skill>/references/       # checklists, regras
    .claude/agents/<nome-do-agente>.md               # se for um agente
    ```
-4. Toda skill/agente gerado por esta meta-skill DEVE incluir, no seu
-   próprio `SKILL.md`/frontmatter:
-   - `description` com gatilhos concretos (quando usar / quando não usar).
-   - Seção "Ferramentas necessárias" listando exatamente o que foi validado
-     na Fase 2 (nunca uma lista genérica "todas as ferramentas").
-   - Seção "Limites conhecidos" com as falhas mapeadas na Fase 2 e como
-     evitá-las.
+4. Toda skill/agente gerado por esta meta-skill DEVE incluir, seguindo as
+   seções já definidas em `templates/skill-template.md` ou
+   `templates/agent-template.md` (os nomes exatos das seções podem variar
+   entre os dois templates, mas o conteúdo abaixo é obrigatório nos dois):
+   - `description`/frontmatter com gatilhos concretos (quando usar / quando
+     não usar) — nunca uma frase genérica.
+   - Uma seção listando exatamente as ferramentas validadas na Fase 2
+     (nunca uma lista genérica "todas as ferramentas").
+   - Uma seção com as falhas mapeadas na Fase 2 e como o artefato gerado
+     evita repeti-las.
 
-**Nunca gere o artefato final sem ter passado pelas Fases 1–3** nesta
-mesma sessão ou em uma sessão anterior cujo template aprovado já exista em
-`templates/`.
+**Nunca gere o artefato final sem antes ter feito a Fase 1 nesta mesma
+sessão** (o molde do arquiteto é sempre obrigatório, mesmo que rápido) **e
+sem ter concluído as Fases 2–3 nesta sessão ou em uma execução anterior
+cujo template aprovado já exista em `templates/`** (ver regra de
+escalonamento de esforço na Fase 3).
 
 ### Fase 5 — Otimização em contexto limpo
 
