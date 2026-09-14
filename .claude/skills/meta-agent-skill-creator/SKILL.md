@@ -13,8 +13,9 @@ compilar a versão automatizada, para que o resultado final não vire um
 "Frankenstein" indepurável.
 
 Regra de ouro herdada da metodologia: **leia e explique ao usuário cada
-arquivo de configuração gerado** (`SKILL.md`, `AGENTS.md`, `CLAUDE.md`,
-manifests de ferramentas). Nunca gere um agente/skill "caixa-preta".
+arquivo de configuração gerado** (`SKILL.md`, frontmatter de agente em
+`.claude/agents/*.md`, `CLAUDE.md`, manifests de ferramentas). Nunca gere
+um agente/skill "caixa-preta".
 
 ## Quando usar esta skill
 
@@ -23,11 +24,26 @@ manifests de ferramentas). Nunca gere um agente/skill "caixa-preta".
 - Um fluxo manual repetido nesta conversa que vale a pena virar automação.
 - Pedido explícito de "meta-skill", "agente que cria agentes", "fábrica de skills".
 
+## Quando NÃO usar esta skill
+
+- Edição pontual de uma skill/agente já existente sem mudança de escopo
+  (é uma edição direta de arquivo, não passa pelo pipeline de 6 fases).
+- Dúvidas conceituais sobre como o Claude Code funciona (frontmatter,
+  slash commands, hooks) sem intenção de criar um artefato novo — nesse
+  caso use `claude-code-guide`.
+- Quando já existe, em `templates/`, um template aprovado para exatamente
+  este tipo de artefato **e** o pedido é simples/bem entendido: vá direto
+  para a Fase 4 reutilizando esse template, sem repetir as Fases 2–3 (ver
+  nota de escalonamento de esforço na Fase 3).
+
 ## O que esta skill NUNCA faz
 
 - Nunca aceita "crie uma skill que cria agentes" como primeiro e único passo
-  e pula direto para gerar arquivos. Sempre roda a Fase 1–3 primeiro (mesmo
-  que de forma rápida quando o pedido já é simples e bem entendido).
+  e pula direto para gerar arquivos quando não há template aprovado
+  reaproveitável. Sempre roda a Fase 1 e, na ausência de um template
+  aprovado equivalente em `templates/`, também as Fases 2–3, antes da
+  Fase 4 — com o esforço da Fase 3 escalado à complexidade do pedido (ver
+  regra de escalonamento de esforço na Fase 3).
 - Nunca inventa nomes de ferramentas, variáveis de ambiente, chaves de API
   ou caminhos de diretório. Se algo é necessário e desconhecido, pergunta.
 - Nunca escala silenciosamente uma falha crítica (permissão de terminal,
@@ -46,8 +62,9 @@ explícitas registradas, se o pedido já for claro):
 2. **Ferramentas de sistema necessárias** — leitura/escrita de arquivo,
    execução de shell, chamadas de rede/API, acesso a MCP servers.
 3. **Arquivos de instrução base**:
-   - `SKILL.md` (para skills) ou `AGENTS.md`/frontmatter de agente (para
-     subagentes) — contrato de comportamento, escopo, limites.
+   - `SKILL.md` (para skills) ou o arquivo de frontmatter do subagente em
+     `.claude/agents/<nome>.md` (para agentes) — contrato de comportamento,
+     escopo, limites.
    - `CLAUDE.md` de projeto, se o agente/skill precisa de contexto
      persistente do repositório.
 4. **Critério de sucesso** — como saberemos que o agente/skill funcionou.
@@ -94,6 +111,15 @@ Critérios de "template limpo" (ver `references/template-checklist.md`):
 frontmatter mínimo e correto, descrição de trigger específica (não vaga),
 sem ferramentas não usadas, sem seções vazias, sem instruções redundantes
 com o comportamento padrão do Claude Code.
+
+**Regra de escalonamento de esforço** (evita desperdício de token, ver
+Fase 5): o ciclo completo de 5+5 variações é para artefatos **novos ou
+arquiteturalmente diferentes** de tudo que já existe em `templates/`. Para
+um pedido simples e bem entendido cujo tipo de artefato já tem um template
+aprovado em `templates/skill-template.md` ou `templates/agent-template.md`,
+pule direto para a Fase 4 usando esse template — não regenere 10 variações
+de algo já validado. Rode o ciclo completo (ou uma versão reduzida, 2–3
+variações) apenas quando o template existente não cobrir bem o caso novo.
 
 **Saída da Fase 3:** um template final aprovado, salvo em
 `templates/agent-template.md` ou `templates/skill-template.md` (reutilizável
@@ -142,9 +168,13 @@ criou:
    ineficiências de token: chamadas redundantes, geração de código do zero
    quando um template em `templates/` já resolveria, passos que poderiam
    ser um script determinístico em vez de raciocínio do modelo.
-3. Prefira sempre **reusar templates salvos** (`templates/*.md`, scripts em
-   `scripts/`) em vez de reinventar a estrutura a cada execução — essa é a
-   otimização central da metodologia.
+3. Prefira sempre **reusar templates salvos** (`templates/*.md`) em vez de
+   reinventar a estrutura a cada execução — essa é a otimização central da
+   metodologia. Se o mesmo passo determinístico se repetir em múltiplas
+   gerações (ex.: sempre criar os mesmos 3 diretórios), considere propor um
+   script auxiliar em `scripts/` dentro da skill/agente gerado — mas só
+   crie esse diretório quando houver de fato um script, nunca como pasta
+   vazia "por precaução".
 4. Atualize `templates/` e `references/` com o que for aprendido nesse
    teste, para que a próxima geração já comece otimizada.
 
