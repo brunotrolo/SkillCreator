@@ -26,8 +26,13 @@ um agente/skill "caixa-preta".
 
 ## Quando NÃO usar esta skill
 
-- Edição pontual de uma skill/agente já existente sem mudança de escopo
-  (é uma edição direta de arquivo, não passa pelo pipeline de 6 fases).
+- Edição pontual de uma skill/agente já existente **sem mudança de escopo**
+  (corrigir um typo, ajustar uma frase, trocar um caminho) — é uma edição
+  direta de arquivo, não passa pelo pipeline de 6 fases. Se a edição
+  adiciona/remove uma ferramenta, muda o que o artefato tem permissão de
+  fazer, ou muda o critério de sucesso, isso É mudança de escopo — trate
+  como uma nova Fase 1 (rápida) seguida de Fase 4, mesmo que Fases 2–3
+  sejam puladas por já existir template aprovado.
 - Dúvidas conceituais sobre como o Claude Code funciona (frontmatter,
   slash commands, hooks) sem intenção de criar um artefato novo — nesse
   caso use `claude-code-guide`.
@@ -73,7 +78,20 @@ Se qualquer um desses 4 pontos for ambíguo, pare e pergunte ao usuário
 (via `AskUserQuestion` quando disponível) em vez de assumir.
 
 **Saída da Fase 1:** um resumo curto (3-6 linhas) do molde, mostrado ao
-usuário antes de prosseguir.
+usuário antes de prosseguir. Exemplo real (pedido: "crie um agente que
+resume as principais causas de erro de um arquivo de log"):
+
+> **Molde:** agente `log-error-summarizer` — lê um arquivo de log, agrupa
+> ocorrências por causa raiz e devolve um ranking com contagem.
+> **Ferramentas:** `Read`, `Grep` (leitura e contagem; sem `Bash`, sem
+> escrita — não precisa modificar nada).
+> **Arquivos:** `.claude/agents/log-error-summarizer.md`; sem `CLAUDE.md`
+> (não depende de contexto do projeto).
+> **Sucesso:** dado um caminho de log, devolve uma lista rankeada de causas
+> com contagem, sem exigir que o usuário descreva o formato do log antes.
+
+Esse nível de densidade (curto, concreto, sem enrolação) é o que se espera
+— não um parágrafo de justificativa nem uma lista genérica.
 
 ### Fase 2 — Execução manual de um caso de teste ("prompt a prompt")
 
@@ -180,8 +198,13 @@ criou:
    script auxiliar em `scripts/` dentro da skill/agente gerado — mas só
    crie esse diretório quando houver de fato um script, nunca como pasta
    vazia "por precaução".
-4. Atualize `templates/` e `references/` com o que for aprendido nesse
-   teste, para que a próxima geração já comece otimizada.
+4. Sempre registre em `CHANGELOG.md` o que foi aprendido nesse teste (o quê
+   e por quê, uma linha) — mesmo quando a lição é específica de domínio e
+   não justifica mudar um template genérico. Quando a lição for genérica o
+   suficiente para valer para outros agentes/skills (não específica deste
+   caso), atualize também `templates/` e/ou `references/`. Sem o registro
+   em `CHANGELOG.md`, a próxima execução desta meta-skill não sabe por que
+   o template é como é, e pode revertê-lo sem querer.
 
 ### Fase 6 — Escalonamento para humanos (falha crítica nunca é silenciosa)
 
@@ -209,6 +232,38 @@ gerar deve tratar falhas críticas assim:
 
 ---
 
+## Exemplo de execução completa
+
+Pedido: "crie um agente que resume as principais causas de erro de um
+arquivo de log". Este é o mesmo caso usado como exemplo na Fase 1 acima;
+aqui está o pipeline inteiro:
+
+1. **Fase 1** — molde definido (ver exemplo na Fase 1). Sem ambiguidade,
+   segue sem perguntar.
+2. **Fase 2** — rascunho inicial listava `Read`, `Grep` e `Bash` (para
+   `wc -l` contar ocorrências). Ao testar, a contagem via `Bash` era
+   redundante: o modo `count` do próprio `Grep` já resolve, sem abrir uma
+   ferramenta de shell genérica para um agente só de leitura. **Correção
+   registrada:** nunca inclua `Bash` num agente somente-leitura quando a
+   ferramenta especializada (`Grep`/`Glob`) já cobre o caso.
+3. **Fase 3** — o pedido é simples e `templates/agent-template.md` já
+   cobre bem esse tipo de agente (leitura + análise) → regra de
+   escalonamento de esforço aplicada, pula direto para a Fase 4 sem gerar
+   variações novas.
+4. **Fase 4** — gera `.claude/agents/log-error-summarizer.md` a partir do
+   template, com `tools: Read, Grep` (não `Bash`), e a seção de falhas
+   conhecidas documentando: "se o formato do log for desconhecido, não
+   tente adivinhar o parser — peça uma amostra de 5-10 linhas ao usuário".
+5. **Fase 5** — recomendado testar em sessão nova; a correção da Fase 2
+   (não usar `Bash` à toa) é registrada em `CHANGELOG.md` como regra
+   reutilizável — o template genérico (`agent-template.md`) continua
+   agnóstico de domínio, mas a próxima vez que alguém gerar um agente
+   parecido (leitura + análise), essa lição já está documentada em vez de
+   precisar ser redescoberta.
+6. **Fase 6** — se o log não existir no caminho informado, o agente reporta
+   isso como falha crítica ao usuário (arquivo não encontrado) em vez de
+   inventar um resumo vazio.
+
 ## Templates e referências desta skill
 
 - `templates/skill-template.md` — esqueleto aprovado para novas skills.
@@ -217,7 +272,12 @@ gerar deve tratar falhas críticas assim:
   na Fase 3.
 - `references/escalation-rules.md` — como a Fase 6 deve ser implementada em
   cada artefato gerado.
+- `CHANGELOG.md` — histórico de tudo que foi aprendido em execuções desta
+  skill, com o motivo de cada entrada (ver Fase 5, item 4); nem toda
+  entrada implica mudar `templates/` ou `references/` — lições específicas
+  de um domínio ficam só registradas aqui.
 
-Sempre que uma nova iteração desta meta-skill produzir um template melhor,
-atualize os arquivos em `templates/` em vez de deixar a melhoria apenas na
-conversa — o ganho de eficiência da Fase 5 depende disso.
+Sempre que uma nova iteração desta meta-skill aprender algo (mude ou não um
+template), registre em `CHANGELOG.md`; quando a lição for genérica o
+suficiente, atualize também `templates/` e/ou `references/` — não deixe a
+melhoria apenas na conversa, o ganho de eficiência da Fase 5 depende disso.
