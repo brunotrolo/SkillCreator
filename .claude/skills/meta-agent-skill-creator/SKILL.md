@@ -275,7 +275,10 @@ aqui está o pipeline inteiro:
 - `CHANGELOG.md` — histórico de tudo que foi aprendido em execuções desta
   skill, com o motivo de cada entrada (ver Fase 5, item 4); nem toda
   entrada implica mudar `templates/` ou `references/` — lições específicas
-  de um domínio ficam só registradas aqui.
+  de um domínio ficam só registradas aqui. Quando a seção "Não versionado"
+  acumular ~10-15 entradas, consolide-a num release datado (ver a
+  convenção de manutenção no topo do próprio `CHANGELOG.md`) em vez de
+  deixá-la crescer indefinidamente.
 
 Sempre que uma nova iteração desta meta-skill aprender algo (mude ou não um
 template), registre em `CHANGELOG.md`; quando a lição for genérica o
